@@ -75,7 +75,7 @@ public class Utils {
     }
 
     /**
-     * 归并排序。归并排序是稳定的，Arrays中对对象排序就是使用的归并排序。JDK中的归并排序是经过大量优化的，叫TomSort,
+     * 自顶向下的归并排序。归并排序是稳定的，Arrays中对对象排序就是使用的归并排序。JDK中的归并排序是经过大量优化的，叫TomSort,
      * TimSort属于归并与插入的混合排序算法。
      * @param arr array to be sorted
      * @param <T> Type of array
@@ -110,12 +110,11 @@ public class Utils {
     }
 
     /**
-     * 额外开辟一个数组，借助该数组合并两半部分有序的数组，返回新开辟的数组
+     * 额外开辟一个数组，借助该数组合并两半部分有序的数组
      * @param arr array to be merged
      * @param leftIndex left index
      * @param midIndex middle index
      * @param rightIndex right index
-     * @param <T> new array
      */
     private static <T extends Comparable<T>> void merge(T[] arr, int leftIndex, int midIndex, int rightIndex) {
         //只复制[leftIndex, rightIndex]的值，注意copyOfRange的to参数是开区间，因此此处需要+1
@@ -144,8 +143,89 @@ public class Utils {
 
     }
 
-    public static <T extends Comparable<T>> void quickSort(T[] arr){
+    /**
+     * 自底向上的归并排序，迭代实现。
+     * @param arr arr to be sorted
+     * @param <T> type of elements
+     */
+    public static <T extends Comparable<T>> void mergeSortBottomUp(T[] arr){
+        for (int size = 1; size <= arr.length ; size *= 2) {
+            for (int i = 0; i + size < arr.length; i += 2*size) {
+                merge(arr, i, i + size, Math.min(i + 2 * size, arr.length - 1));
+            }
+        }
+    }
 
+    /**
+     * 单轴快排。数组近乎有序时，退化为时间复杂度为n平方的算法
+     * @param arr arr to be sorted
+     * @param <T> type of elements
+     */
+    public static <T extends Comparable<T>> void quickSort(T[] arr){
+        quickSort(arr, 0, arr.length - 1);
+    }
+
+    public static <T extends Comparable<T>> void randomizedQuickSort(T[] arr){
+        //使用Knuth算法打乱数组，优化快速排序
+        knuthShuffle(arr);
+        quickSort(arr, 0, arr.length - 1);
+    }
+
+    private static <T extends Comparable<T>> void quickSort(T[] arr, int leftIndex, int rightIndex) {
+        if(leftIndex >= rightIndex){
+            return;
+        }
+        //轴左边的元素小于它，右边的元素大于它
+        int pivotIndex = partition(arr, leftIndex, rightIndex);
+        quickSort(arr, leftIndex, pivotIndex - 1);
+        quickSort(arr, pivotIndex + 1, rightIndex);
+    }
+
+    /**
+     * let arr[leftIndex...pivotIndex-1] < arr[pivotIndex], arr[pivotIndex+1...rightIndex] > arr[pivotIndex]
+     * @param arr array to be sorted
+     * @param leftIndex left boundary index
+     * @param rightIndex right boundary index
+     * @param <T> type of elements
+     * @return pivot index
+     */
+    private static <T extends Comparable<T>> int partition(T[] arr, int leftIndex, int rightIndex) {
+        //选定第一个元素作为轴
+        T pivot = arr[leftIndex];
+
+        //由于pivot选定为左边界，因此这里的l需要+1
+        int l = leftIndex + 1, r = rightIndex;
+        //将比pivot小的元素和比pivot大的元素划分为两部分
+        while(l <= r){
+            //从左往右找到第一个比pivot大的元素的索引
+            while(l <=r && arr[l].compareTo(pivot) <= 0){
+                l++;
+            }
+            //从右往左找到第一个比pivot小的元素的索引
+            while(l <= r && arr[r].compareTo(pivot) > 0){
+                r--;
+            }
+
+            if(l < r){
+                swap(arr, l, r);
+            }
+        }
+        //pivot换到中间，完成一次partition
+        swap(arr, leftIndex, r);
+
+        return r;
+    }
+
+    /**
+     * Knuth洗牌算法，用于随机化数组元素，优化快速排序
+     * @param arr array to be randomized
+     * @param <T> type of elements
+     */
+    private static <T extends Comparable<T>> void knuthShuffle(T[] arr){
+        for(int i = arr.length-1; i >= 0; i--){
+            //arr[i]与arr[随机生成0-i之间的整数]交换
+            swap(arr, i, (int)(Math.random()*(i+1)));
+        }
     }
 
     private static <T extends Comparable<T>> void swap(T[] arr, int i, int j) {
@@ -169,6 +249,30 @@ public class Utils {
             arr[i] = (int) (Math.random() * (rangeR - rangeL + 1) + rangeL);
         }
 
+        return arr;
+    }
+
+    /**
+     *   生成一个近乎有序的数组
+     *   首先生成一个含有[0...n-1]的完全有序数组, 之后随机交换swapTimes对数据
+     *   swapTimes定义了数组的无序程度:
+     *   swapTimes == 0 时, 数组完全有序
+     *   swapTimes 越大, 数组越趋向于无序
+     * @param n number of integers
+     */
+    public static Integer[] generateNearlyOrderedArray(int n, int swapTimes){
+
+        Integer[] arr = new Integer[n];
+        for( int i = 0 ; i < n ; i ++ ){
+            arr[i] = i;
+        }
+        for( int i = 0 ; i < swapTimes ; i ++ ){
+            int a = (int)(Math.random() * n);
+            int b = (int)(Math.random() * n);
+            int t = arr[a];
+            arr[a] = arr[b];
+            arr[b] = t;
+        }
         return arr;
     }
 
