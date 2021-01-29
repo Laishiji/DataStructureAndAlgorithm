@@ -149,9 +149,11 @@ public class Utils {
      * @param <T> type of elements
      */
     public static <T extends Comparable<T>> void mergeSortBottomUp(T[] arr){
-        for (int size = 1; size <= arr.length ; size *= 2) {
+        for (int size = 1; size < arr.length ; size *= 2) {
             for (int i = 0; i + size < arr.length; i += 2*size) {
-                merge(arr, i, i + size, Math.min(i + 2 * size, arr.length - 1));
+                if(arr[i+size-1].compareTo(arr[i+size]) > 0){
+                    merge(arr, i, i + size, Math.min(i + 2 * size - 1, arr.length - 1));
+                }
             }
         }
     }
@@ -198,15 +200,15 @@ public class Utils {
         //将比pivot小的元素和比pivot大的元素划分为两部分
         while(l <= r){
             //从左往右找到第一个比pivot大的元素的索引
-            while(l <=r && arr[l].compareTo(pivot) <= 0){
+            while(l <= r && arr[l].compareTo(pivot) <= 0){
                 l++;
             }
             //从右往左找到第一个比pivot小的元素的索引
-            while(l <= r && arr[r].compareTo(pivot) > 0){
+            while(l <= r && arr[r].compareTo(pivot) >= 0){
                 r--;
             }
 
-            if(l < r){
+            if(l <= r){
                 swap(arr, l, r);
             }
         }
@@ -217,14 +219,70 @@ public class Utils {
     }
 
     /**
-     * Knuth洗牌算法，用于随机化数组元素，优化快速排序
+     * Knuth洗牌算法，用于随机化数组元素，优化快速排序。
+     * 该算法保证了每一个元素出现在每一个位置的概率相等。
      * @param arr array to be randomized
      * @param <T> type of elements
      */
     private static <T extends Comparable<T>> void knuthShuffle(T[] arr){
         for(int i = arr.length-1; i >= 0; i--){
-            //arr[i]与arr[随机生成0-i之间的整数]交换
+            //arr[i]与0-i之间的随机一个数交换
             swap(arr, i, (int)(Math.random()*(i+1)));
+        }
+    }
+
+    /**
+     * 堆排序。
+     * @param arr array to be sorted
+     * @param <T> type of elements
+     */
+    public static <T extends Comparable<T>> void heapSort(T[] arr){
+        heapify(arr);
+        //逆序遍历数组，每次与堆顶元素交换，然后堆顶元素执行下沉(shiftDown)操作
+        for (int i = arr.length-1;  i >= 0; i--) {
+            swap(arr, 0, i);
+            //每次下沉的边界为i，否则又会打乱顺序
+            shiftDown(arr, 0, i);
+        }
+    }
+
+    /**
+     * 由于任意数组都可以看作一棵完全二叉树，因此heapify操作可将任意数组堆化。所谓堆化，就是将任意数组转化为二叉堆。
+     * heapify的实现：从最后一个非叶子节点开始，依次对每一个非叶子节点执行shift down操作即可。
+     * 最后一个非叶子节点的索引定位：若数组下标从0开始，则为(arr.length-1-1)/2。
+     * @param arr array to be heapified
+     * @param <T> type of elements
+     */
+    private static <T extends Comparable<T>> void heapify(T[] arr) {
+        for (int i = (arr.length - 2)/2; i >= 0 ; i--) {
+            shiftDown(arr, i, arr.length-1);
+        }
+    }
+
+    /**
+     * 对索引为i的节点执行下沉操作。这里构建的是大根堆。
+     * @param arr array
+     * @param i 待下沉节点索引
+     * @param rightBound 每次下沉的右边界
+     * @param <T> type of elements
+     */
+    private static <T extends Comparable<T>> void shiftDown(T[] arr, int i, int rightBound) {
+        while (2*i+1 < rightBound){
+            int temp = 2*i+1;
+            //判断右孩子索引是否越界
+            if(temp + 1 < rightBound && arr[temp+1].compareTo(arr[temp]) > 0) {
+                //若右孩子大于左孩子，则temp改为右孩子索引
+                temp++;
+            }
+
+            //待下沉节点若大于其左右孩子，循环终止；否则与其左右孩子中较大的一个交换。
+            if(arr[i].compareTo(arr[temp]) >= 0){
+                break;
+            }
+            swap(arr, i, temp);
+
+            //继续下沉
+            i = temp;
         }
     }
 
@@ -299,6 +357,7 @@ public class Utils {
             sortMethod.invoke(null, (Object) arr);
             long endTime = System.currentTimeMillis();
 
+            //默认关闭断言，需要开启JVM参数-ea或者-enableassertions
             assert isSorted(arr) : "this array is not sorted.";
 
             System.out.println((methodName.charAt(0)+"").toUpperCase() +
